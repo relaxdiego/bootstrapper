@@ -1,0 +1,20 @@
+#!/bin/bash
+
+get_abspath(){
+    local relpath=$1
+    local abspath
+
+    if [ -d "$relpath" ]; then
+        cd "$relpath" && abspath=$(pwd) && cd - > /dev/null
+    fi
+
+    echo "$abspath"
+    return 0
+}
+
+get_cluster_id(){
+    local vars_file=$1
+    set -eo pipefail
+    grep "cluster_id:" $vars_file | sed "s/cluster_id: *//g"
+    return 0
+}

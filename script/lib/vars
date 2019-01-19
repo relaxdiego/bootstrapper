@@ -1,0 +1,21 @@
+#!/bin/bash
+
+export scriptlibdir_relpath=$(dirname "${BASH_SOURCE[0]}")
+
+cd ${scriptlibdir_relpath}/../..
+export projectrootdir_abspath=$(pwd)
+cd - > /dev/null
+
+export scriptdir_abspath=${projectrootdir_abspath}/script
+
+export ansible_image_name=bootstrapper-ansible
+
+export playbooksdir_abspath=${projectrootdir_abspath}/playbooks
+
+export container_user=ubuntu
+export container_workdir_abspath=/opt/ansible
+export container_playbooksdir_abspath=${container_workdir_abspath}/playbooks
+export container_configdir_abspath=${container_workdir_abspath}/configdir
+export container_varsfile_abspath=${container_configdir_abspath}/vars.yml
+
+source $scriptdir_abspath/lib/colors

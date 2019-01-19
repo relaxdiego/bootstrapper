@@ -1,0 +1,28 @@
+FROM ubuntu:18.04
+
+ARG workdir=/opt/ansible
+
+WORKDIR $workdir
+
+RUN apt-get update -y
+RUN apt-get install -y \
+        software-properties-common \
+        curl \
+        gnupg \
+        openssh-client \
+        sshpass \
+        vim
+
+RUN apt-add-repository -y ppa:ansible/ansible
+RUN apt-get update -y
+RUN apt-get install -y ansible=2.7.5-1ppa~bionic
+
+ENV ANSIBLE_GATHERING smart
+ENV ANSIBLE_HOST_KEY_CHECKING true
+ENV ANSIBLE_RETRY_FILES_ENABLED false
+ENV ANSIBLE_FORCE_COLOR true
+
+RUN useradd -ms /bin/bash ubuntu
+USER ubuntu
+
+ENTRYPOINT ["ansible-playbook"]

@@ -1,0 +1,74 @@
+#!/bin/bash
+
+set -e
+
+# Check if the relative path is defined
+if [ -z "$1" ]; then
+    echo "Please run using \`$0 /path/to/cluster/config/dir/\`"
+    exit 1
+else
+    configdir_relpath=${1%/}; shift
+fi
+
+# Load the common vars and functions used by this script
+export scriptdir_path=$(dirname "${BASH_SOURCE[0]}")
+source $scriptdir_path/lib/vars
+source $scriptdir_path/lib/funcs
+
+# Now we pre some more variables for use by the containerized Ansible
+
+# Convert the cluster configdir specified in the arg to an absolute path
+configdir_abspath=$(get_abspath $configdir_relpath)
+
+varsfile_abspath=$configdir_abspath/vars.yml
+
+# Each cluster should have its own unique ID in its vars file designated
+# by the cluster_id key. We're going to use that to determine where to
+# look for its Ansible Vault password file.
+cluster_id=$(get_cluster_id $varsfile_abspath)
+
+# Extra variables to be passed on to Ansible
+extra_vars=(
+    "configdir_abspath='$container_configdir_abspath'"
+    "varsfile_abspath='$container_varsfile_abspath'"
+)
+
+# Flatten $extra_vars array prior to passing to Ansible
+extra_vars="${extra_vars[@]}"
+
+# Lets build the image. If none of the dependencies have changed since
+# the last build, this will just output "Nothing to be done for ansible"
+# So we grep that out but also prevent it from failing if it's there.
+# See the Makefile for more information.
+make ansible | grep -v "Nothing to be done" || true
+
+# Show the Ansible version for logging/debugging purposes
+docker run "${ansible_image_name}" --version
+
+# Show the docker command on the terminal for logging/debugging purposes
+set -x
+
+# The extra "$@" at the end of this command allows users to add extra
+# arguments to script/configure which will then be passed on to the
+# ansible-playbook executable. Arguments like --tags, --ask-pass, etc
+# will work as one would normally expect. For more available arguments
+# run script/help
+time docker run \
+    -it \
+    --rm \
+    --mount type=bind,source=${playbooksdir_abspath},target=${container_playbooksdir_abspath},readonly \
+    --mount type=bind,source=${configdir_abspath},target=${container_configdir_abspath},readonly \
+    --mount type=bind,source=$HOME/.ssh/known_hosts,target=/root/.ssh/known_hosts \
+    --mount type=bind,source=$HOME/.ssh/id_rsa,target=/root/.ssh/id_rsa,readonly \
+    --mount type=bind,source=$HOME/.ssh/id_rsa.pub,target=/root/.ssh/id_rsa.pub,readonly \
+    "${ansible_image_name}" \
+    --inventory=${container_configdir_abspath}/hosts \
+    --extra-vars "$extra_vars" \
+    ${container_playbooksdir_abspath}/configure.yml \
+    "$@"
+
+# Quiet down those noisy commands and get off my lawn!
+{ set +x; } 2>/dev/null
+
+echo
+echo -e "${green}Your cluster is ready, master.${normal}"

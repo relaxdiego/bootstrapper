@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Load the common vars and functions used further down
+scriptdir_path=$(dirname "${BASH_SOURCE[0]}")
+source $scriptdir_path/lib/vars
+
+# Lets build the image. If none of the dependencies have changed since
+# the last build, this will just output "Nothing to be done for ansible"
+# See the Makefile for more information.
+make ansible
+
+docker run \
+    -it \
+    "${ansible_image_name}" \
+    "--help"
