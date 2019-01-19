@@ -21,16 +21,22 @@ source $scriptdir_path/lib/funcs
 configdir_abspath=$(get_abspath $configdir_relpath)
 
 varsfile_abspath=$configdir_abspath/vars.yml
+vaultfile_abspath=$configdir_abspath/vault.yml
 
 # Each cluster should have its own unique ID in its vars file designated
 # by the cluster_id key. We're going to use that to determine where to
 # look for its Ansible Vault password file.
 cluster_id=$(get_cluster_id $varsfile_abspath)
+vault_password_file_abspath=$(get_vault_password_file_abspath $cluster_id)
+
+check_vault_password_file $vault_password_file_abspath
+check_vault_file $vaultfile_abspath
 
 # Extra variables to be passed on to Ansible
 extra_vars=(
     "configdir_abspath='$container_configdir_abspath'"
     "varsfile_abspath='$container_varsfile_abspath'"
+    "vaultfile_abspath='$container_vaultfile_abspath'"
 )
 
 # Flatten $extra_vars array prior to passing to Ansible
@@ -38,9 +44,7 @@ extra_vars="${extra_vars[@]}"
 
 # Lets build the image. If none of the dependencies have changed since
 # the last build, this will just output "Nothing to be done for ansible"
-# So we grep that out but also prevent it from failing if it's there.
-# See the Makefile for more information.
-make ansible | grep -v "Nothing to be done" || true
+make ansible
 
 # Show the Ansible version for logging/debugging purposes
 docker run "${ansible_image_name}" --version
@@ -58,11 +62,13 @@ time docker run \
     --rm \
     --mount type=bind,source=${playbooksdir_abspath},target=${container_playbooksdir_abspath},readonly \
     --mount type=bind,source=${configdir_abspath},target=${container_configdir_abspath},readonly \
+    --mount type=bind,source=${vault_password_file_abspath},target=${container_vault_password_file_abspath},readonly \
     --mount type=bind,source=$HOME/.ssh/known_hosts,target=/root/.ssh/known_hosts \
     --mount type=bind,source=$HOME/.ssh/id_rsa,target=/root/.ssh/id_rsa,readonly \
     --mount type=bind,source=$HOME/.ssh/id_rsa.pub,target=/root/.ssh/id_rsa.pub,readonly \
     "${ansible_image_name}" \
     --inventory=${container_configdir_abspath}/hosts \
+    --vault-password-file=${container_vault_password_file_abspath} \
     --extra-vars "$extra_vars" \
     ${container_playbooksdir_abspath}/configure.yml \
     "$@"

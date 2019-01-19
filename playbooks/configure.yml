@@ -3,6 +3,7 @@
   gather_facts: false
 
   vars_files:
+    - "{{vaultfile_abspath}}"
     - "{{varsfile_abspath}}"
 
   roles:

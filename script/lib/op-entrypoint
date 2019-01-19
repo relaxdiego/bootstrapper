@@ -1,0 +1,67 @@
+#!/bin/bash
+
+set -eu
+
+source /bin/colors
+
+choice=0
+vault_choice=0
+
+if [ -f "$vault_password_file_abspath" ]; then
+    echo "Vault password file fount at $host_vault_password_file_abspath."
+else
+    echo -e "${red}ERROR:${normal} Vault password file not found at $host_vault_password_file_abspath."
+    for (( ; ; )); do
+        echo "What would you like to do:"
+        echo
+        echo "  1) Create password file and upload to 1Password"
+        echo "  2) Download password file from 1Password"
+        echo
+        echo -e "Your choice? (1 or 2): \c"
+        read choice
+
+        if [ "$choice" = "1" ]; then
+            echo -e "Initializing vault password file at ${host_vault_password_file_abspath}"
+            vault_password=$(uuidgen)
+            echo "$vault_password" > $vault_password_file_abspath
+
+            echo -e "Enter 1password subdomain (e.g. xxx.1password.com): \c"
+            read op_subdomain
+
+            echo -e "Enter 1password email: \c"
+            read op_email
+
+            if grep $op_subdomain ~/.op/config 1>/dev/null; then
+                eval $(op signin $op_subdomain)
+            else
+                eval $(op signin $op_subdomain $op_email)
+            fi
+
+            vaults_json=$(op list vaults)
+            max_choice=$(echo $vaults_json | jq -r '. | length')
+
+            echo "Please pick a vault to upload the password file to. Make sure it's a vault that your teammates also have acces to."
+
+            for (( ; ; )); do
+                echo $vaults_json | jq -r '[keys, map(.name)] | transpose | [[.[][0]+1 | tostring], [.[][1]]] | transpose | .[] | join(") ")'
+                echo -e "Pick a number (1 to $max_choice): \c"
+                read vault_choice
+                if [ "$vault_choice" -lt 1 ] || [ "$vault_choice" -gt $max_choice ]; then
+                    echo
+                    echo -e "${red}Invalid choice${normal}"
+                    echo
+                else
+                    break 1
+                fi
+            done
+            break 1
+        elif [ "$choice" = "2" ]; then
+            download_password_file
+            break 1
+        else
+            echo
+            echo -e "${red}Invalid choice${normal}"
+            echo
+        fi
+    done
+fi

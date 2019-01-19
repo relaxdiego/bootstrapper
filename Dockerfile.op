@@ -1,0 +1,20 @@
+FROM ubuntu:18.04
+ARG workdir=/opt/op
+ARG user=ubuntu
+WORKDIR $workdir
+
+RUN apt-get update -y
+RUN apt-get install -y software-properties-common gnupg
+RUN apt-get install -y wget unzip gnupg2 jq uuid-runtime
+
+RUN wget https://cache.agilebits.com/dist/1P/op/pkg/v0.5.5/op_linux_amd64_v0.5.5.zip
+RUN unzip op_linux_amd64_v0.5.5.zip
+RUN cp op /bin/op
+
+COPY ./script/lib/op-entrypoint /bin/
+COPY ./script/lib/colors /bin/
+
+RUN useradd -ms /bin/bash $user
+USER $user
+
+ENTRYPOINT ["/bin/op"]

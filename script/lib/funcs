@@ -1,5 +1,29 @@
 #!/bin/bash
 
+check_vault_password_file(){
+    # Lets build the image. If none of the dependencies have changed since
+    # the last build, this will just output "Nothing to be done for op"
+    make op
+
+    prep_password_file_dir $vault_password_file_abspath
+
+    set -x
+
+    docker run \
+        -it \
+        --rm \
+        --mount type=bind,source=$(dirname $vault_password_file_abspath),target=$(dirname $container_vault_password_file_abspath) \
+        --mount type=bind,source=$HOME/.op,target=/home/$container_user/.op \
+        --env host_vault_password_file_abspath=$vault_password_file_abspath \
+        --env vault_password_file_abspath=$container_vault_password_file_abspath \
+        --env cluster_id=$cluster_id \
+        --entrypoint=/bin/op-entrypoint \
+        "${op_image_name}"
+
+    # Quiet down those noisy commands and get off my lawn!
+    { set +x; } 2>/dev/null
+}
+
 get_abspath(){
     local relpath=$1
     local abspath
@@ -17,4 +41,14 @@ get_cluster_id(){
     set -eo pipefail
     grep "cluster_id:" $vars_file | sed "s/cluster_id: *//g"
     return 0
+}
+
+get_vault_password_file_abspath(){
+    local cluster_id=$1
+    echo $HOME/.bootstrapper-ansible/${cluster_id}/vault-password
+    return 0
+}
+
+prep_password_file_dir(){
+    mkdir -p $(dirname $1)
 }
