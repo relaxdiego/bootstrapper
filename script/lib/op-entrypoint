@@ -48,7 +48,7 @@ create_password_file(){
     local vaults_json=$(op list vaults)
     local max_choice=$(echo $vaults_json | jq -r '. | length')
 
-    echo "Please pick a vault to upload the password file to. Make sure it's a vault that your teammates also have acces to."
+    echo "Please pick a vault to upload the password file to. Make sure it's a vault that your teammates also have access to."
 
     for (( ; ; )); do
         echo $vaults_json | jq -r '[keys, map(.name)] | transpose | [[.[][0]+1 | tostring], [.[][1]]] | transpose | .[] | join(") ")'
@@ -61,6 +61,54 @@ create_password_file(){
         else
             vault_obj=$(echo $vaults_json | jq -rc .[$vault_choice-1])
             upload_password_file $vault_obj
+            break 1
+        fi
+    done
+}
+
+download_password_file(){
+    local vault_obj=$1
+    local vault_uuid=$(echo $vault_obj | jq -r .uuid)
+    local vault_name=$(echo $vault_obj | jq -r .name)
+    local document_name="ansible_vault_password_$cluster_id"
+    local all_docs=$(op list documents --vault=$vault_uuid)
+    local candidates=$(echo $all_docs | jq -rc '[.[] | select(.overview.title=="ansible_vault_password_demo-ffa25ab") | select(.trashed == "N")]')
+    local num_candidates=$(echo $candidates | jq length)
+    local document_uuid=""
+
+    if [ $num_candidates -gt 1 ]; then
+        echo "${yellow}IMPLEMENT ME! (Found more than one document named $document_name)${normal}"
+        exit 1
+    elif [ $num_candidates -lt 1 ]; then
+        echo "${red}ERROR: Could not find $document_name in vault $vault_name${normal}"
+        exit 1
+    else
+        document_uuid=$(echo $candidates | jq -rc '.[0].uuid')
+    fi
+
+    echo "Downloading $document_name (UUID: $document_uuid) from vault '$vault_name' to $host_vault_password_file_abspath"
+    op get document $document_uuid --vault=$vault_uuid > $vault_password_file_abspath
+}
+
+get_password_file(){
+    login_to_1password
+
+    local vaults_json=$(op list vaults)
+    local max_choice=$(echo $vaults_json | jq -r '. | length')
+
+    echo "Please pick a vault to download the password file from."
+
+    for (( ; ; )); do
+        echo $vaults_json | jq -r '[keys, map(.name)] | transpose | [[.[][0]+1 | tostring], [.[][1]]] | transpose | .[] | join(") ")'
+        echo -e "Pick a number (1 to $max_choice): \c"
+        read vault_choice
+        if [ "$vault_choice" -lt 1 ] || [ "$vault_choice" -gt $max_choice ]; then
+            echo
+            echo -e "${red}Invalid choice${normal}"
+            echo
+        else
+            vault_obj=$(echo $vaults_json | jq -rc .[$vault_choice-1])
+            download_password_file $vault_obj
             break 1
         fi
     done
@@ -98,7 +146,7 @@ upload_password_file(){
     local vault_uuid=$(echo $vault_obj | jq -r .uuid)
     local vault_name=$(echo $vault_obj | jq -r .name)
 
-    echo "Uploading to $vault_password_file_abspath to vault '$vault_name' (UUID: $vault_uuid)"
+    echo "Uploading to $host_vault_password_file_abspath to vault '$vault_name' (UUID: $vault_uuid)"
     op create document \
         $vault_password_file_abspath \
         --title=ansible_vault_password_$cluster_id \
