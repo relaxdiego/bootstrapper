@@ -60,13 +60,13 @@ create_password_file(){
             echo
         else
             vault_obj=$(echo $vaults_json | jq -rc .[$vault_choice-1])
-            upload_password_file $vault_obj
+            upload_1password_document $vault_obj
             break 1
         fi
     done
 }
 
-download_password_file(){
+download_1password_document(){
     local vault_obj=$1
     local vault_uuid=$(echo $vault_obj | jq -r .uuid)
     local vault_name=$(echo $vault_obj | jq -r .name)
@@ -108,7 +108,7 @@ get_password_file(){
             echo
         else
             vault_obj=$(echo $vaults_json | jq -rc .[$vault_choice-1])
-            download_password_file $vault_obj
+            download_1password_document $vault_obj
             break 1
         fi
     done
@@ -141,7 +141,7 @@ login_to_1password(){
     done
 }
 
-upload_password_file(){
+upload_1password_document(){
     local vault_obj=$1
     local vault_uuid=$(echo $vault_obj | jq -r .uuid)
     local vault_name=$(echo $vault_obj | jq -r .name)
