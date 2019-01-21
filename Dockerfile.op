@@ -14,7 +14,6 @@ RUN cp op /bin/op
 COPY ./script/lib/op-entrypoint /bin/
 COPY ./script/lib/colors /bin/
 
-RUN useradd -ms /bin/bash $user
 USER $user
 
 ENTRYPOINT ["/bin/op"]

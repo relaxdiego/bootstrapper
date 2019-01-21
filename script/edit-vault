@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+
+#Check if the relative path is defined
+if [ -z "$1" ]; then
+    echo "Please run using \`$0 /path/to/cluster/config/dir/\`"
+    exit 1
+else
+    configdir_relpath=${1%/}; shift
+fi
+
+# Load the common vars and functions used by this script
+export scriptdir_path=$(dirname "${BASH_SOURCE[0]}")
+source $scriptdir_path/lib/vars
+source $scriptdir_path/lib/funcs
+
+# Now we pre some more variables for use by the containerized Ansible
+
+# Convert the cluster configdir specified in the arg to an absolute path
+configdir_abspath=$(get_abspath $configdir_relpath)
+
+varsfile_abspath=$configdir_abspath/vars.yml
+vaultfile_abspath=$configdir_abspath/vault.yml
+
+# Each cluster should have its own unique ID in its vars file designated
+# by the cluster_id key. We're going to use that to determine where to
+# look for its Ansible Vault password file.
+cluster_id=$(get_cluster_id $varsfile_abspath)
+vault_password_file_abspath=$(get_vault_password_file_abspath $cluster_id)
+
+edit_vaultfile

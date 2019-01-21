@@ -1,5 +1,104 @@
 #!/bin/bash
 
+check_vault_file(){
+    local vault_file_abspath=$1
+
+    # Lets build the image. If none of the dependencies have changed since
+    # the last build, this will just output "Nothing to be done for ansible"
+    make ansible
+
+    if [ -f $vaultfile_abspath ]; then
+        # Attempt to decrypt the vaultfile to check if the vault password
+        # file is the correct one that we have locally.
+        decrypt_vaultfile
+        encrypt_vaultfile
+        echo -e "${green}Vault file is readable${normal}"
+    else
+        create_vaultfile
+    fi
+}
+
+create_vaultfile(){
+    echo -e "${yellow}Initializing vault:${normal} ${vaultfile_abspath}"
+    echo "---" > $vaultfile_abspath
+
+    set -x
+
+    docker run \
+        -it \
+        --rm \
+        --mount type=bind,source=${vault_password_file_abspath},target=${container_vault_password_file_abspath},readonly \
+        --mount type=bind,source=$(dirname $vaultfile_abspath),target=$(dirname $container_vaultfile_abspath) \
+        --env host_vault_file_abspath=$vaultfile_abspath \
+        --env vault_file_abspath=$container_vaultfile_abspath \
+        --entrypoint='ansible-vault' \
+        "${ansible_image_name}" \
+        encrypt \
+        --vault-password-file=${container_vault_password_file_abspath} \
+        $container_vaultfile_abspath
+
+    # Quiet down those noisy commands and get off my lawn!
+    { set +x; } 2>/dev/null
+}
+
+edit_vaultfile(){
+    set -x
+
+     docker run \
+        -it \
+        --rm \
+        --mount type=bind,source=$(dirname $vaultfile_abspath),target=$(dirname $container_vaultfile_abspath) \
+        --mount type=bind,source=${vault_password_file_abspath},target=${container_vault_password_file_abspath} \
+        --entrypoint=ansible-vault \
+        "${ansible_image_name}" \
+        edit \
+        --vault-password-file=${container_vault_password_file_abspath} \
+        $container_vaultfile_abspath
+
+    # Quiet down those noisy commands and get off my lawn!
+    { set +x; } 2>/dev/null
+}
+
+encrypt_vaultfile(){
+    set -x
+
+     docker run \
+        -it \
+        --rm \
+        --mount type=bind,source=$(dirname $vaultfile_abspath),target=$(dirname $container_vaultfile_abspath) \
+        --mount type=bind,source=${vault_password_file_abspath},target=${container_vault_password_file_abspath} \
+        --entrypoint=ansible-vault \
+        "${ansible_image_name}" \
+        encrypt \
+        --vault-password-file=${container_vault_password_file_abspath} \
+        $container_vaultfile_abspath &>/dev/null
+
+    # Quiet down those noisy commands and get off my lawn!
+    { set +x; } 2>/dev/null
+}
+
+decrypt_vaultfile(){
+    set -x
+
+    if ! docker run \
+            -it \
+            --rm \
+            --mount type=bind,source=$(dirname $vaultfile_abspath),target=$(dirname $container_vaultfile_abspath) \
+            --mount type=bind,source=${vault_password_file_abspath},target=${container_vault_password_file_abspath} \
+            --entrypoint=ansible-vault \
+            "${ansible_image_name}" \
+            decrypt \
+            --vault-password-file=${container_vault_password_file_abspath} \
+            $container_vaultfile_abspath \
+         &>/dev/null; then
+        echo -e "${red}ERROR:${normal} Unable to decrypt the vault. Was this encrypted with a different password?"
+        exit 1
+    fi
+
+    # Quiet down those noisy commands and get off my lawn!
+    { set +x; } 2>/dev/null
+}
+
 check_vault_password_file(){
     # Lets build the image. If none of the dependencies have changed since
     # the last build, this will just output "Nothing to be done for op"

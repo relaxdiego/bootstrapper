@@ -1,8 +1,10 @@
 FROM ubuntu:18.04
 
-ARG workdir=/opt/ansible
+ARG workdir
 
 WORKDIR $workdir
+
+USER root
 
 RUN apt-get update -y
 RUN apt-get install -y \
@@ -15,14 +17,16 @@ RUN apt-get install -y \
 
 RUN apt-add-repository -y ppa:ansible/ansible
 RUN apt-get update -y
-RUN apt-get install -y ansible=2.7.5-1ppa~bionic
+
+# Adding this for the sake of convenience so that we can see through the
+# build logs what versions of Ansible are available to install
+RUN apt-cache policy ansible
+
+RUN apt-get install -y ansible=2.7.6-1ppa~bionic
 
 ENV ANSIBLE_GATHERING smart
 ENV ANSIBLE_HOST_KEY_CHECKING true
 ENV ANSIBLE_RETRY_FILES_ENABLED false
 ENV ANSIBLE_FORCE_COLOR true
-
-RUN useradd -ms /bin/bash ubuntu
-USER ubuntu
 
 ENTRYPOINT ["ansible-playbook"]
