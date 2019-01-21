@@ -25,7 +25,7 @@ entrypoint(){
                 create_password_file
                 break 1
             elif [ "$choice" = "2" ]; then
-                download_password_file
+                get_password_file
                 break 1
             else
                 echo
@@ -43,20 +43,10 @@ create_password_file(){
     vault_password=$(uuidgen)
     echo "$vault_password" > $vault_password_file_abspath
 
-    echo -e "Enter 1password subdomain (e.g. xxx.1password.com): \c"
-    read op_subdomain
+    login_to_1password
 
-    echo -e "Enter 1password email: \c"
-    read op_email
-
-    if grep $op_subdomain ~/.op/config 1>/dev/null; then
-        eval $(op signin $op_subdomain)
-    else
-        eval $(op signin $op_subdomain $op_email)
-    fi
-
-    vaults_json=$(op list vaults)
-    max_choice=$(echo $vaults_json | jq -r '. | length')
+    local vaults_json=$(op list vaults)
+    local max_choice=$(echo $vaults_json | jq -r '. | length')
 
     echo "Please pick a vault to upload the password file to. Make sure it's a vault that your teammates also have acces to."
 
@@ -72,6 +62,33 @@ create_password_file(){
             vault_obj=$(echo $vaults_json | jq -rc .[$vault_choice-1])
             upload_password_file $vault_obj
             break 1
+        fi
+    done
+}
+
+login_to_1password(){
+    if op list vaults &>/dev/null; then
+        return 0
+    fi
+
+    for (( ; ; )); do
+        echo -e "Enter 1password subdomain (e.g. xxx.1password.com): \c"
+        read op_subdomain
+
+        echo -e "Enter 1password email: \c"
+        read op_email
+
+        if grep $op_subdomain ~/.op/config 1>/dev/null; then
+            eval $(op signin $op_subdomain)
+        else
+            eval $(op signin $op_subdomain $op_email)
+        fi
+
+        if op list vaults &>/dev/null; then
+            echo -e "${green}Logged in succesfully to $op_subdomain.${normal}"
+            break
+        else
+            echo -e "${red}Login failed. Please try again.${normal}"
         fi
     done
 }
