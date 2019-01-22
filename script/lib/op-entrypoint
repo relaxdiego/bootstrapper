@@ -9,11 +9,11 @@ entrypoint(){
     local vault_obj
 
     if [ -f "$vault_password_file_abspath" ]; then
-        echo "Vault password file fount at $host_vault_password_file_abspath."
+        echo -e "${green}Vault password file found at $host_vault_password_file_abspath.${normal}"
     else
         echo -e "${red}ERROR:${normal} Vault password file not found at $host_vault_password_file_abspath."
         for (( ; ; )); do
-            echo "What would you like to do:"
+            echo -e "${yellow}What would you like to do:${normal}"
             echo
             echo "  1) Create password file and upload to 1Password"
             echo "  2) Download password file from 1Password"
@@ -39,16 +39,18 @@ entrypoint(){
 create_password_file(){
     local vault_choice=0
 
-    echo -e "Initializing vault password file at ${host_vault_password_file_abspath}"
+    echo -e "${green}Initializing vault password file at ${host_vault_password_file_abspath}${normal}"
     vault_password=$(uuidgen)
     echo "$vault_password" > $vault_password_file_abspath
+
+    echo -e "${yellow}Uploading vault password to 1Password."
 
     login_to_1password
 
     local vaults_json=$(op list vaults)
     local max_choice=$(echo $vaults_json | jq -r '. | length')
 
-    echo "Please pick a vault to upload the password file to. Make sure it's a vault that your teammates also have access to."
+    echo -e "${yellow}Please pick a vault to upload the password file to. Make sure it's a vault that your teammates also have access to.${normal}"
 
     for (( ; ; )); do
         echo $vaults_json | jq -r '[keys, map(.name)] | transpose | [[.[][0]+1 | tostring], [.[][1]]] | transpose | .[] | join(") ")'
@@ -86,7 +88,7 @@ download_1password_document(){
         document_uuid=$(echo $candidates | jq -rc '.[0].uuid')
     fi
 
-    echo "Downloading $document_name (UUID: $document_uuid) from vault '$vault_name' to $host_vault_password_file_abspath"
+    echo -e "${yellow}Downloading $document_name (UUID: $document_uuid) from vault '$vault_name' to $host_vault_password_file_abspath${normal}"
     op get document $document_uuid --vault=$vault_uuid > $vault_password_file_abspath
 }
 
@@ -116,8 +118,11 @@ get_password_file(){
 
 login_to_1password(){
     if op list vaults &>/dev/null; then
+        echo -e "${green}Already logged in to 1Password"
         return 0
     fi
+
+    echo -e "${yellow}Please log in to 1Password${normal}"
 
     for (( ; ; )); do
         echo -e "Enter 1password subdomain (e.g. xxx.1password.com): \c"
@@ -146,7 +151,7 @@ upload_1password_document(){
     local vault_uuid=$(echo $vault_obj | jq -r .uuid)
     local vault_name=$(echo $vault_obj | jq -r .name)
 
-    echo "Uploading to $host_vault_password_file_abspath to vault '$vault_name' (UUID: $vault_uuid)"
+    echo -e "${yellow}Uploading to $host_vault_password_file_abspath to vault '$vault_name' (UUID: $vault_uuid)${normal}"
     op create document \
         $vault_password_file_abspath \
         --title=ansible_vault_password_$cluster_id \

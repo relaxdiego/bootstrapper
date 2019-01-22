@@ -3,6 +3,8 @@ Bootstrapper Kit
 
 This project is an attempt at making onboarding teammates onto an Ansible
 project way easier by Dockerizing dependencies and reducing workstation requirements.
+It also provides a way to securely share Ansible Vault password files via
+1Password.
 
 
 Requirements

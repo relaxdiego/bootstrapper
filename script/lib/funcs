@@ -112,7 +112,7 @@ check_vault_password_file(){
         -it \
         --rm \
         --mount type=bind,source=$(dirname $vault_password_file_abspath),target=$(dirname $container_vault_password_file_abspath) \
-        --mount type=bind,source=$HOME/.op,target=/home/$container_user/.op \
+        --mount type=bind,source=$HOME/.op,target=/root/.op \
         --env host_vault_password_file_abspath=$vault_password_file_abspath \
         --env vault_password_file_abspath=$container_vault_password_file_abspath \
         --env cluster_id=$cluster_id \
