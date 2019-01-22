@@ -22,7 +22,8 @@ Run it with
 script/configure /path/to/cluster/config/dir
 ```
 
-NOTE: There's a sample cluster config dir in sample/demo1.
+NOTE: There's a sample cluster config dir at
+[https://github.com/relaxdiego/bootstrapper-sample-clusters](https://github.com/relaxdiego/bootstrapper-sample-clusters)
 
 The above command will build the necessary Docker images, initialize your
 Ansible Vault password and file and also upload the password file to your
