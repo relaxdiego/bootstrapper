@@ -10,6 +10,11 @@ else
     configdir_relpath=${1%/}; shift
 fi
 
+if [ "$1" == "--debug" ]; then
+    export debug_mode=t
+    shift
+fi
+
 # Load the common vars and functions used by this script
 export scriptdir_path=$(dirname "${BASH_SOURCE[0]}")
 source $scriptdir_path/lib/vars
@@ -50,7 +55,7 @@ make ansible
 docker run "${ansible_image_name}" --version
 
 # Show the docker command on the terminal for logging/debugging purposes
-set -x
+set_x
 
 # The extra "$@" at the end of this command allows users to add extra
 # arguments to script/configure which will then be passed on to the
@@ -73,8 +78,7 @@ time docker run \
     ${container_playbooksdir_abspath}/configure.yml \
     "$@"
 
-# Quiet down those noisy commands and get off my lawn!
-{ set +x; } 2>/dev/null
+unset_x
 
 echo
 echo -e "${green}Your cluster is ready, master.${normal}"

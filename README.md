@@ -1,5 +1,5 @@
-Bootstrapper Kit
-================
+Bootstrapper Kit (Project Status: Alpha)
+========================================
 
 This project is an attempt at making onboarding teammates onto an Ansible
 project way easier by Dockerizing dependencies and reducing workstation requirements.

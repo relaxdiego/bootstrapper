@@ -74,15 +74,15 @@ download_1password_document(){
     local vault_name=$(echo $vault_obj | jq -r .name)
     local document_name="ansible_vault_password_$cluster_id"
     local all_docs=$(op list documents --vault=$vault_uuid)
-    local candidates=$(echo $all_docs | jq -rc '[.[] | select(.overview.title=="ansible_vault_password_demo-ffa25ab") | select(.trashed == "N")]')
+    local candidates=$(echo $all_docs | jq -rc --arg TITLE $document_name '[.[] | select(.overview.title==$TITLE) | select(.trashed == "N")]')
     local num_candidates=$(echo $candidates | jq length)
     local document_uuid=""
 
     if [ $num_candidates -gt 1 ]; then
-        echo "${yellow}IMPLEMENT ME! (Found more than one document named $document_name)${normal}"
+        echo -e "${yellow}IMPLEMENT ME! (Found more than one document named $document_name)${normal}"
         exit 1
     elif [ $num_candidates -lt 1 ]; then
-        echo "${red}ERROR: Could not find $document_name in vault $vault_name${normal}"
+        echo -e "${red}ERROR: Could not find $document_name in vault $vault_name${normal}"
         exit 1
     else
         document_uuid=$(echo $candidates | jq -rc '.[0].uuid')
@@ -155,7 +155,7 @@ upload_1password_document(){
     op create document \
         $vault_password_file_abspath \
         --title=ansible_vault_password_$cluster_id \
-        --vault=$vault_uuid
+        --vault=$vault_uuid | jq .uuid
 }
 
 entrypoint

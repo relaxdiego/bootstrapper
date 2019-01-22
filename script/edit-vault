@@ -10,6 +10,11 @@ else
     configdir_relpath=${1%/}; shift
 fi
 
+if [ "$1" == "--debug" ]; then
+    export debug_mode=t
+    shift
+fi
+
 # Load the common vars and functions used by this script
 export scriptdir_path=$(dirname "${BASH_SOURCE[0]}")
 source $scriptdir_path/lib/vars

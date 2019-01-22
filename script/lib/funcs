@@ -22,7 +22,7 @@ create_vaultfile(){
     echo -e "${yellow}Initializing vault:${normal} ${vaultfile_abspath}"
     echo "---" > $vaultfile_abspath
 
-    set -x
+    set_x
 
     docker run \
         -it \
@@ -37,12 +37,11 @@ create_vaultfile(){
         --vault-password-file=${container_vault_password_file_abspath} \
         $container_vaultfile_abspath
 
-    # Quiet down those noisy commands and get off my lawn!
-    { set +x; } 2>/dev/null
+    unset_x
 }
 
 edit_vaultfile(){
-    set -x
+    set_x
 
      docker run \
         -it \
@@ -55,12 +54,11 @@ edit_vaultfile(){
         --vault-password-file=${container_vault_password_file_abspath} \
         $container_vaultfile_abspath
 
-    # Quiet down those noisy commands and get off my lawn!
-    { set +x; } 2>/dev/null
+     unset_x
 }
 
 encrypt_vaultfile(){
-    set -x
+    set_x
 
      docker run \
         -it \
@@ -73,12 +71,11 @@ encrypt_vaultfile(){
         --vault-password-file=${container_vault_password_file_abspath} \
         $container_vaultfile_abspath &>/dev/null
 
-    # Quiet down those noisy commands and get off my lawn!
-    { set +x; } 2>/dev/null
+     unset_x
 }
 
 decrypt_vaultfile(){
-    set -x
+    set_x
 
     if ! docker run \
             -it \
@@ -95,8 +92,7 @@ decrypt_vaultfile(){
         exit 1
     fi
 
-    # Quiet down those noisy commands and get off my lawn!
-    { set +x; } 2>/dev/null
+    unset_x
 }
 
 check_vault_password_file(){
@@ -106,7 +102,7 @@ check_vault_password_file(){
 
     prep_password_file_dir $vault_password_file_abspath
 
-    set -x
+    set_x
 
     docker run \
         -it \
@@ -150,4 +146,15 @@ get_vault_password_file_abspath(){
 
 prep_password_file_dir(){
     mkdir -p $(dirname $1)
+}
+
+set_x(){
+    if [ "$debug_mode" == "t" ]; then
+        set -x
+    fi
+}
+
+unset_x(){
+    # Quiet down those noisy commands and get off my lawn!
+    { set +x; } 2>/dev/null
 }
