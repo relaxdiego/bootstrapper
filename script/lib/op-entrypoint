@@ -47,7 +47,7 @@ create_password_file(){
 
     login_to_1password
 
-    local vaults_json=$(op list vaults)
+    local vaults_json=$(op list vaults | jq -r 'sort_by(.name)')
     local max_choice=$(echo $vaults_json | jq -r '. | length')
 
     echo -e "${yellow}Please pick a vault to upload the password file to. Make sure it's a vault that your teammates also have access to.${normal}"
@@ -95,7 +95,7 @@ download_1password_document(){
 get_password_file(){
     login_to_1password
 
-    local vaults_json=$(op list vaults)
+    local vaults_json=$(op list vaults | jq -r 'sort_by(.name)')
     local max_choice=$(echo $vaults_json | jq -r '. | length')
 
     echo "Please pick a vault to download the password file from."
